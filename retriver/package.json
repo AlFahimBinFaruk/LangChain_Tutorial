@@ -2,6 +2,7 @@
   "name": "retriver",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,7 +11,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@chroma-core/default-embed": "^0.1.8",
+    "@huggingface/transformers": "^3.6.2",
     "@langchain/community": "^0.3.48",
+    "@langchain/core": "^0.3.62",
     "pdf-parse": "^1.1.1"
   }
 }
