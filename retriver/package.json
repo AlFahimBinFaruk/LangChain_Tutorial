@@ -15,6 +15,7 @@
     "@huggingface/transformers": "^3.6.2",
     "@langchain/community": "^0.3.48",
     "@langchain/core": "^0.3.62",
+    "chromadb": "^3.0.7",
     "pdf-parse": "^1.1.1"
   }
 }
