@@ -2,7 +2,6 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
 import { Chroma } from "@langchain/community/vectorstores/chroma";
-import { ChromaClient } from "chromadb";
 
 async function main() {
   const loader = new PDFLoader("/home/bs00927/Downloads/nke-10k-2023.pdf");
@@ -17,28 +16,23 @@ async function main() {
   const embeddings = new HuggingFaceTransformersEmbeddings({
     model: "Xenova/all-MiniLM-L6-v2",
   });
-  const client = new ChromaClient({
-    path: "http://localhost:8000",
-    ssl: false,
-  });
+
   const vectorStore = new Chroma(embeddings, {
-    client,
     collectionName: "a-test-collection",
-    collectionMetadata: { "hnsw:space": "cosine" },
+    url: "http://localhost:8000",
+    collectionMetadata: {
+      "hnsw:space": "cosine",
+    },
   });
 
   // console.log("res => ", allSplits);
-
-  const docRes = await embeddings.embedDocuments(allSplits);
-  console.log(docRes);
   const documents = allSplits.map((doc, index) => ({
     pageContent: doc.pageContent,
     metadata: {
       source: doc.metadata.source,
       pageNumber: doc.metadata.loc?.pageNumber || null,
-      // Add other relevant metadata fields here
     },
-    id: String(index + 1), // Ensure unique IDs
+    id: String(index + 1),
   }));
   await vectorStore.addDocuments(documents, {
     ids: documents.map((_, index) => String(index + 1)),
