@@ -34,6 +34,7 @@ async function main() {
     },
     id: String(index + 1),
   }));
+
   await vectorStore.addDocuments(documents, {
     ids: documents.map((_, index) => String(index + 1)),
   });
@@ -42,12 +43,24 @@ async function main() {
     "How were Nike's margins impacted in 2023?"
   );
 
-  const results = await vectorStore.similaritySearchVectorWithScore(
+  const result1 = await vectorStore.similaritySearchVectorWithScore(
     [embedding],
     1
   );
 
-  console.log("Result => ", results);
+  console.log("Result => ", result1);
+
+
+  // ------ NOT WOKRING ------
+  // const retriver = vectorStore.asRetriever({
+  //   filter: {},
+  //   k: 2,
+  // });
+  // const embedding2 = await embeddings.embedDocuments(
+  //   ["When was Nike incorporated?"]
+  // );
+  // const result2 = await retriver.batch([embedding2]);
+  // console.log("Result2 => ", result2);
 }
 
 main().catch(console.error);
