@@ -29,22 +29,20 @@ async function main() {
 
   // console.log("res => ", allSplits);
 
-  // const docRes=await embeddings.embedDocuments(allSplits)
-  // console.log(docRes)
-  //   const documents = allSplits.map((doc, index) => ({
-  //   pageContent: doc.pageContent,
-  //   metadata: {
-  //     source: doc.metadata.source,
-  //     pageNumber: doc.metadata.loc?.pageNumber || null,
-  //     // Add other relevant metadata fields here
-  //   },
-  //   id: String(index + 1), // Ensure unique IDs
-  // }));
-  //   await vectorStore.addDocuments(documents,{
-  //   ids: documents.map((_, index) => String(index + 1)),
-  // });
-
-  // const filter = { source: "https://example.com" };
+  const docRes = await embeddings.embedDocuments(allSplits);
+  console.log(docRes);
+  const documents = allSplits.map((doc, index) => ({
+    pageContent: doc.pageContent,
+    metadata: {
+      source: doc.metadata.source,
+      pageNumber: doc.metadata.loc?.pageNumber || null,
+      // Add other relevant metadata fields here
+    },
+    id: String(index + 1), // Ensure unique IDs
+  }));
+  await vectorStore.addDocuments(documents, {
+    ids: documents.map((_, index) => String(index + 1)),
+  });
 
   const embedding = await embeddings.embedQuery(
     "How were Nike's margins impacted in 2023?"
