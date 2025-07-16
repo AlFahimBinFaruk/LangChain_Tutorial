@@ -1,0 +1,18 @@
+{
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "node dist/main.js",
+    "dev": "npm run build && npm run start"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.63",
+    "@langchain/google-genai": "^0.2.15",
+    "@langchain/langgraph": "^0.3.8",
+    "dotenv": "^17.2.0",
+    "uuid": "^11.1.0"
+  }
+}
