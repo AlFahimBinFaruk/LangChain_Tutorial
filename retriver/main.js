@@ -26,18 +26,19 @@ async function main() {
   });
 
   // console.log("res => ", allSplits);
-  const documents = allSplits.map((doc, index) => ({
-    pageContent: doc.pageContent,
-    metadata: {
-      source: doc.metadata.source,
-      pageNumber: doc.metadata.loc?.pageNumber || null,
-    },
-    id: String(index + 1),
-  }));
+  // ------ uncomment it to add data to db.
+  // const documents = allSplits.map((doc, index) => ({
+  //   pageContent: doc.pageContent,
+  //   metadata: {
+  //     source: doc.metadata.source,
+  //     pageNumber: doc.metadata.loc?.pageNumber || null,
+  //   },
+  //   id: String(index + 1),
+  // }));
 
-  await vectorStore.addDocuments(documents, {
-    ids: documents.map((_, index) => String(index + 1)),
-  });
+  // await vectorStore.addDocuments(documents, {
+  //   ids: documents.map((_, index) => String(index + 1)),
+  // });
 
   const embedding = await embeddings.embedQuery(
     "How were Nike's margins impacted in 2023?"
@@ -49,7 +50,6 @@ async function main() {
   );
 
   console.log("Result => ", result1);
-
 
   // ------ NOT WOKRING ------
   // const retriver = vectorStore.asRetriever({
