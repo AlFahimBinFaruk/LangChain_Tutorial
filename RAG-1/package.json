@@ -1,0 +1,23 @@
+{
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "node dist/main.js",
+    "dev": "yarn run build && yarn run start"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@chroma-core/default-embed": "^0.1.8",
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/community": "^0.3.49",
+    "@langchain/core": "^0.3.65",
+    "@langchain/google-genai": "^0.2.15",
+    "@langchain/langgraph": "^0.3.10",
+    "cheerio": "^1.1.0",
+    "chromadb": "^3.0.9",
+    "dotenv": "^17.2.0",
+    "langchain": "^0.3.30"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "RAG-2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "node dist/main.js",
+    "dev": "npm run build && npm run start"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/community": "^0.3.49",
+    "@langchain/core": "^0.3.66",
+    "@langchain/google-genai": "^0.2.15",
+    "@langchain/langgraph": "^0.3.11",
+    "@langchain/openai": "^0.6.2",
+    "@langchain/pinecone": "^0.2.0",
+    "@pinecone-database/pinecone": "5",
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.0",
+    "langchain": "^0.3.30",
+    "zod": "^4.0.0"
+  }
+}
