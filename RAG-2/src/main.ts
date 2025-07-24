@@ -23,7 +23,14 @@ import { toolsCondition } from "@langchain/langgraph/prebuilt";
 
 import { BaseMessage, isAIMessage } from "@langchain/core/messages";
 
+import { MemorySaver } from "@langchain/langgraph";
+
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+
 import "dotenv/config";
+
+
+
 
 const prettyPrint = (message: BaseMessage) => {
   let txt = `[${message._getType()}]: ${message.content}`;
@@ -36,16 +43,27 @@ const prettyPrint = (message: BaseMessage) => {
   console.log(txt);
 };
 
+
+
+
+
+
 async function main() {
+
+
+
+
   const llm = new ChatGoogleGenerativeAI({
     model: "gemini-2.0-flash",
     temperature: 0,
   });
+
   const embeddings = new GoogleGenerativeAIEmbeddings({
     model: "text-embedding-004", // 768 dimensions
   });
+
   const pinecone = new PineconeClient();
-  const pineconeIndex = pinecone.Index("test2");
+  const pineconeIndex = pinecone.Index("rag-2");
 
   const vectorStore = new PineconeStore(embeddings, {
     pineconeIndex,
@@ -69,7 +87,7 @@ async function main() {
   });
   const allSplits = await splitter.splitDocuments(docs);
   // Adding the retrived info to DB.
-  await vectorStore.addDocuments(allSplits);
+  // await vectorStore.addDocuments(allSplits);
 
   // What i need to give input to get result(input args my retrive-tool expects).
   const retrieveSchema = z.object({ query: z.string() });
@@ -159,6 +177,11 @@ async function main() {
     return { messages: [response] };
   }
 
+
+
+
+
+
   const graphBuilder = new StateGraph(MessagesAnnotation)
     .addNode("queryOrRespond", queryOrRespond)
     .addNode("tools", tools)
@@ -171,34 +194,85 @@ async function main() {
     .addEdge("tools", "generate")
     .addEdge("generate", "__end__");
 
-  const graph = graphBuilder.compile();
-
-  let inputs1 = { messages: [{ role: "user", content: "Hello" }] };
-
-  /**
-   * "stream":  Instead of waiting until the whole graph finishes, you get live visibility into each node’s output.
-   * streamMode: "values" means step obj will contain Full state after each graph node executes
-   */
-  for await (const step of await graph.stream(inputs1, {
-    streamMode: "values",
-  })) {
-    // console.log(step.messages);
-    const lastMessage = step.messages[step.messages.length - 1];
-    prettyPrint(lastMessage);
-    console.log("-----\n");
-  }
-
-  let inputs2 = {
-    messages: [{ role: "user", content: "What is Task Decomposition?" }],
+  const checkpointer = new MemorySaver();
+  const graph = graphBuilder.compile({ checkpointer });
+  const threadConfig = {
+    configurable: { thread_id: "abc123" },
+    streamMode: "values" as const,
   };
 
-  for await (const step of await graph.stream(inputs2, {
+
+
+
+
+
+  // let inputs1 = {
+  //   messages: [{ role: "user", content: "What is Task Decomposition?" }],
+  // };
+
+  // /**
+  //  * "stream":  Instead of waiting until the whole graph finishes, you get live visibility into each node’s output.
+  //  * streamMode: "values" means step obj will contain Full state after each graph node executes
+  //  */
+  // for await (const step of await graph.stream(inputs1, threadConfig)) {
+  //   // console.log(step.messages);
+  //   const lastMessage = step.messages[step.messages.length - 1];
+  //   prettyPrint(lastMessage);
+  //   console.log("-----\n");
+  // }
+
+  // let inputs2 = {
+  //   messages: [
+  //     {
+  //       role: "user",
+  //       content: "Can you look up some common ways of doing it?",
+  //     },
+  //   ],
+  // };
+
+  // for await (const step of await graph.stream(inputs2, threadConfig)) {
+  //   const lastMessage = step.messages[step.messages.length - 1];
+  //   prettyPrint(lastMessage);
+  //   console.log("-----\n");
+  // }
+
+
+
+
+
+
+  /**
+   * Above is one way of doing it. Now if we have multiple query and we want to execute them at once instead of step by step like above we can use agents for that.
+   */
+
+  const agent = createReactAgent({ llm: llm, tools: [retrieve] });
+
+
+  let inputMessage = `What is the standard method for Task Decomposition?
+  Once you get the answer, look up common extensions of that method.`;
+
+  let inputs3 = {
+    messages: [{
+      role: "user", content: inputMessage
+    }]
+  };
+
+  for await (const step of await agent.stream(inputs3, {
     streamMode: "values",
   })) {
     const lastMessage = step.messages[step.messages.length - 1];
     prettyPrint(lastMessage);
     console.log("-----\n");
   }
+
+
+
+
+
+
+
+
+
 }
 
 main();

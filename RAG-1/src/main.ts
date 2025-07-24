@@ -11,6 +11,7 @@ import {
 import { TaskType } from "@google/generative-ai";
 import { Chroma } from "@langchain/community/vectorstores/chroma";
 import "dotenv/config";
+import { MemorySaver } from "@langchain/langgraph";
 
 async function main() {
   const llm = new ChatGoogleGenerativeAI({
