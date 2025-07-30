@@ -82,6 +82,33 @@
     "@google/generative-ai" "^0.24.0"
     uuid "^11.1.0"
 
+"@langchain/langgraph-checkpoint@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@langchain/langgraph-checkpoint/-/langgraph-checkpoint-0.1.0.tgz#d2a8bd9eb831f47cfe8b74bc196004388a6083bb"
+  integrity sha512-7oY5b0VQSxcV3DgoHdXiCgBhEzml/ZjZfKNeuq6oZ3ggcdUICa/fzrIBbFju6gxPU8ly93s0OsjF4yURnHw70Q==
+  dependencies:
+    uuid "^10.0.0"
+
+"@langchain/langgraph-sdk@~0.0.103":
+  version "0.0.104"
+  resolved "https://registry.yarnpkg.com/@langchain/langgraph-sdk/-/langgraph-sdk-0.0.104.tgz#1a7c4a56442f13094e288b068de1767de8f99d06"
+  integrity sha512-wUO6GMy65Y7DsWtjTJ3dA59enrZy2wN4o48AMYN7dF7u/PMXXYyBjBCKSzgVWqO6uWH2yNpyGDrcMwKuk5kQLA==
+  dependencies:
+    "@types/json-schema" "^7.0.15"
+    p-queue "^6.6.2"
+    p-retry "4"
+    uuid "^9.0.0"
+
+"@langchain/langgraph@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@langchain/langgraph/-/langgraph-0.4.0.tgz#1f54f1b6ab481ac4ed9331eb6ab8d853d0171393"
+  integrity sha512-o4Eix+lymyhKBL0lJ26e6SaezWC4iyMgFfD9b1nQ22uGKgxRH1QgIeiWP/rdaLWtgIOHNEMkDW+Y0VjCUmyqrg==
+  dependencies:
+    "@langchain/langgraph-checkpoint" "^0.1.0"
+    "@langchain/langgraph-sdk" "~0.0.103"
+    uuid "^10.0.0"
+    zod "^3.25.32"
+
 "@langchain/openai@>=0.1.0 <0.7.0", "@langchain/openai@>=0.2.0 <0.7.0":
   version "0.6.3"
   resolved "https://registry.yarnpkg.com/@langchain/openai/-/openai-0.6.3.tgz#eaaa75bc71afae74dbb76ba4d9e15ef986dee80b"
@@ -158,6 +185,11 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
+
+"@types/json-schema@^7.0.15":
+  version "7.0.15"
+  resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.15.tgz#596a1747233694d50f6ad8a7869fcb6f56cf5841"
+  integrity sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==
 
 "@types/node@>=13.7.0":
   version "24.1.0"
@@ -702,7 +734,7 @@ uuid@^11.1.0:
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-11.1.0.tgz#9549028be1753bb934fc96e2bca09bb4105ae912"
   integrity sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==
 
-uuid@^9.0.1:
+uuid@^9.0.0, uuid@^9.0.1:
   version "9.0.1"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.1.tgz#e188d4c8853cc722220392c424cd637f32293f30"
   integrity sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==
