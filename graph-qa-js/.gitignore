@@ -1,0 +1,5 @@
+.env
+dist
+node_modules
+neo4j/neo4j_data
+neo4j/neo4j_plugin
