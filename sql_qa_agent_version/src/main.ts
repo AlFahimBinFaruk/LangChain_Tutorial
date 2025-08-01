@@ -102,7 +102,7 @@ async function main() {
     const documents = properNouns.map((text) => new Document({ pageContent: text }));
 
     // ******** adding the documents in vector db- only once ******* .
-    // await vectorStore.addDocuments(documents);
+    await vectorStore.addDocuments(documents);
 
     // ************** Initializing the retriver tool. ****************
     // give me top 5 results.

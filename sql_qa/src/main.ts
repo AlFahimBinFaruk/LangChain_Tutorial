@@ -40,7 +40,7 @@ async function main() {
     // Initiating LLM.
     const llm = new ChatGoogleGenerativeAI({
         model: "gemini-2.0-flash",
-        temperature: 0
+        temperature: 2
     });
 
     // Getting the prompt template.
@@ -71,6 +71,7 @@ async function main() {
     // ************* Executing the query. ************
     const executeQuery = async (state: typeof StateAnnotation.State) => {
         const executeQueryTool = new QuerySqlTool(db);
+        console.log("query => ", state.query)
         return { result: await executeQueryTool.invoke(state.query) };
     }
 
@@ -105,7 +106,7 @@ async function main() {
 
     const graph = graphBuilder.compile();
 
-    let inputs = { question: "How many employees are there?" };
+    let inputs = { question: "Give me employees whose age is >18. Current year is 2025 use employee birth-date to determine age." };
 
     for await (const step of await graph.stream(inputs, { streamMode: "updates" })) {
         console.log(step);

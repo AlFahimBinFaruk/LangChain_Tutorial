@@ -12,9 +12,9 @@ from langchain_neo4j import Neo4jVector
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.output_parsers import StrOutputParser
 from typing import List,Optional
-
-
-
+from langchain_neo4j.chains.graph_qa.cypher_utils import CypherQueryCorrector,Schema
+from neo4j.exceptions import CypherSyntaxError
+from langgraph.graph import END,START,StateGraph
 
 load_dotenv()
 
@@ -58,8 +58,6 @@ FOREACH (genre in split(row.genres, '|') |
 # graph.query(movies_query)
 
 # print(graph.schema)
-
-
 
 
 
@@ -321,12 +319,273 @@ class ValidateCypherOutput(BaseModel):
     errors:Optional[List[str]]=Field(
         description="A list of syntax or semantical errors in the Cypher statement. Always explain the discrepancy between schema and Cypher statement"
     )
-    filters:Optional[List[property]]=Field(
+    filters:Optional[List[Property]]=Field(
         description="A list of property-based filters applied in the Cypher statement."
     )
 
 validate_cypher_chain=validate_cypher_prompt | llm.with_structured_output(ValidateCypherOutput)
 
-# corrected_schema=[]
-# for el in enhanced_graph.structured_schema.get("relationships"):
-#     corrected_schema.append(Schema(el["start"], el["type"], el["end"]))
+
+
+
+
+
+### ************ LLM offen strugles to currectly determine relationship directions in generated cypher statements, we can use "CypherQueryCorrector" to correct these directions. ************
+
+corrector_schema=[
+    Schema(el["start"],el["type"],el["end"])
+    for el in graph.structured_schema.get("relationships")
+]
+
+cypher_query_corrector=CypherQueryCorrector(corrector_schema)
+
+
+
+
+### ********** Validating the cypher **********
+
+def validate_cypher(state:OverAllState)->OverAllState:
+    errors=[]
+    mapping_errors=[]
+
+    try:
+        # EXPLAIN detects syntax error in Query.
+        graph.query(f"EXPLAIN {state.get("cypher_statement")}")
+    except CypherSyntaxError as e:
+        errors.append(e.message)
+
+    # use this to correct relationship direction in the statement.
+    corrected_cypher=cypher_query_corrector(state.get("cypher_statement"))
+    if not corrected_cypher:
+        errors.append("The generated Cypher statement doesn't fit the graph schema")
+    if not corrected_cypher==state.get("cypher_statement"):
+        print("Relationship direction was corrected")
+
+    # Use LLM to find additional potential errors and get the mapping for values
+    llm_output=validate_cypher_chain.invoke({
+        "question":state.get("question"),
+        "schema":graph.schema,
+        "cypher":state.get("cypher_statement")
+    })
+
+    if llm_output.errors:
+        errors.extend(llm_output.errors)
+    if llm_output.filters:
+        for filter in llm_output.filters:
+            if(not [
+                prop for prop in graph.structured_schema["node_props"][filter.node_label] if prop["property"]==filter.property_key
+            ][0]["type"]=="STRING"):
+                continue   
+            
+            # Verifying if the value exixits in graph
+            mapping=graph.query(
+                f"MATCH (n:{filter.node_label}) WHERE toLower(n.`{filter.property_key}`)=toLower($value) RETURN 'yes' LIMIT 1",{"value":filter.property_value}
+            )
+            if not mapping:
+                print(
+                    f"Missing value mapping for {filter.node_label} on property {filter.property_key} with value {filter.property_value}"
+                )
+                mapping_errors.append(
+                    f"Missing value mapping for {filter.node_label} on property {filter.property_key} with value {filter.property_value}"
+                )
+    if mapping_errors:
+        next_action="end"
+    elif errors:
+        next_action="correct_cypher"
+    else:
+        next_action="execute_cypher"
+    
+    return {
+        "next_action":next_action,
+        "cypher_statement":corrected_cypher,
+        "cypher_errors":errors,
+        "steps": ["validate_cypher"]
+    }
+
+    
+
+
+
+
+
+
+### ********** The Cypher correction step takes the existing Cypher statement, any identified errors, and the original question to generate a corrected version of the query. **********
+
+correct_cypher_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            (
+                "You are a Cypher expert reviewing a statement written by a junior developer. "
+                "You need to correct the Cypher statement based on the provided errors. No pre-amble."
+                "Do not wrap the response in any backticks or anything else. Respond with a Cypher statement only!"
+            ),
+        ),
+        (
+            "human",
+            (
+                """
+                    Check for invalid syntax or semantics and return a corrected Cypher statement.
+
+                    Schema:
+                    {schema}
+
+                    Note: Do not include any explanations or apologies in your responses.
+                    Do not wrap the response in any backticks or anything else.
+                    Respond with a Cypher statement only!
+
+                    Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
+
+                    The question is:
+                    {question}
+
+                    The Cypher statement is:
+                    {cypher}
+
+                    The errors are:
+                    {errors}
+
+                    Corrected Cypher statement: 
+                """
+            ),
+        ),
+    ]
+)
+
+correct_cypher_chain=correct_cypher_prompt | llm | StrOutputParser()
+
+def correct_cypher(state:OverAllState)->OverAllState:
+    corrected_cypher=correct_cypher_chain.invoke({
+        "question":state.get("question"),
+        "errors":state.get("cypher_errors"),
+        "cypher":state.get("cypher_statement"),
+        "schema":graph.schema
+    })
+    return {
+        "next_action":"validate_cypher",
+        "cypher_statement":corrected_cypher,
+        "steps":["correct_cypher"]
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+### ********** Execuing the Query **********
+
+no_results = "I couldn't find any relevant information in the database"
+
+
+def execute_cypher(state:OverAllState)->OverAllState:
+    records=graph.query(state.get("cypher_statement"))
+    return{
+        "database_records":records if records else no_results,
+        "next_action":"end",
+        "steps":["execute_cypher"]
+    }
+
+
+
+### ********** Generating the final ans based on the query **********
+
+generate_final_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a helpful assistant",
+        ),
+        (
+            "human",
+            (
+                """
+                    Use the following results retrieved from a database to provide
+                    a succinct, definitive answer to the user's question.
+
+                    Respond as if you are answering the question directly.
+
+                    Results: {results}
+                    Question: {question}
+                """
+            ),
+        ),
+    ]
+)
+
+generate_final_chain=generate_final_prompt | llm | StrOutputParser()
+
+def generate_final_answer(state:OverAllState)->OverAllState:
+    final_answer=generate_final_chain.invoke(
+        {"question":state.get("question"),"results":state.get("database_records")}
+    )
+    return {
+        "answer":final_answer,
+        "steps":["generate_final_answer"]
+    }
+
+
+
+
+
+
+
+def guardrails_condition(state:OverAllState)->Literal["generate_cypher","generate_final_answer"]:
+    if state.get("next_action")=="end":
+        return "generate_final_answer"
+    elif state.get("next_action")=="movie":
+        return "generate_cypher"
+    
+def validate_cypher_condition(state:OverAllState)->Literal["generate_final_answer","correct_cypher","execute_cypher"]:
+    if state.get("next_action") == "end":
+        return "generate_final_answer"
+    elif state.get("next_action") == "correct_cypher":
+        return "correct_cypher"
+    elif state.get("next_action") == "execute_cypher":
+        return "execute_cypher"
+    
+
+
+
+
+### ********* Initiating the Graph *********
+
+langgraph=StateGraph(OverAllState,input_schema=InputState,output_schema=OutputState)
+
+langgraph.add_node(guardrails)
+langgraph.add_node(generate_cypher)
+langgraph.add_node(validate_cypher)
+langgraph.add_node(correct_cypher)
+langgraph.add_node(execute_cypher)
+langgraph.add_node(generate_final_answer)
+
+langgraph.add_edge(START,"guardrails")
+langgraph.add_conditional_edges(
+    "guardrails",
+    guardrails_condition
+)
+
+langgraph.add_edge("generate_cypher","validate_cypher")
+langgraph.add_conditional_edges(
+    "validate_cypher",
+    validate_cypher_condition
+)
+
+langgraph.add_edge("correct_cypher", "validate_cypher")
+langgraph.add_edge("execute_cypher","generate_final_answer")
+langgraph.add_edge("generate_final_answer",END)
+
+langgraph=langgraph.compile()
+
+
+
+res=langgraph.invoke({"question": "Who are the Cast of Casino?"})
+
+
+print(res)
+
