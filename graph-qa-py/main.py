@@ -55,6 +55,7 @@ FOREACH (genre in split(row.genres, '|') |
     MERGE (m)-[:IN_GENRE]->(g))
 """
 
+### **** Running the Query to Add movies in DB. ****
 # graph.query(movies_query)
 
 # print(graph.schema)
@@ -67,7 +68,6 @@ FOREACH (genre in split(row.genres, '|') |
 
 
 #### ************* Configuring LLM *************
-
 llm=init_chat_model("gemini-2.5-flash", model_provider="google_genai")
 
 # print(llm.invoke("hello gemini"))
@@ -79,7 +79,6 @@ llm=init_chat_model("gemini-2.5-flash", model_provider="google_genai")
 
 
 #### ************* Defining States *************
-
 class InputState(TypedDict):
     question:str
 
@@ -236,8 +235,9 @@ def generate_cypher(state:OverAllState)->OverAllState:
     NL="\n"
     blocks=[]
     for example in example_selector.select_examples({"question":state.get("question")}):
-        blocks.append(f"Question:{example["question"]}\nCypher:{example['query']}")
+        blocks.append(f"Question:{example["question"]}\nCypher:{example["query"]}")
     
+    # print("blocks => ",blocks)
     fewshot_examples=NL.join(blocks)
 
     generated_cypher=text2cypher_chain.invoke({
@@ -314,7 +314,7 @@ class Property(BaseModel):
         description="The value that the property is being matched against."
     )
 
-# defining cypher output after validation
+# defining the validator output after validation
 class ValidateCypherOutput(BaseModel):
     errors:Optional[List[str]]=Field(
         description="A list of syntax or semantical errors in the Cypher statement. Always explain the discrepancy between schema and Cypher statement"
@@ -330,8 +330,7 @@ validate_cypher_chain=validate_cypher_prompt | llm.with_structured_output(Valida
 
 
 
-### ************ LLM offen strugles to currectly determine relationship directions in generated cypher statements, we can use "CypherQueryCorrector" to correct these directions. ************
-
+### ************ LLM offen strugles to currectly determine relationship directions in generated cypher statements, we can use "CypherQueryCorrector" to correct these directions. Here we are basically feeding the graph relationship once to the LLM to validate.************
 corrector_schema=[
     Schema(el["start"],el["type"],el["end"])
     for el in graph.structured_schema.get("relationships")
@@ -343,7 +342,6 @@ cypher_query_corrector=CypherQueryCorrector(corrector_schema)
 
 
 ### ********** Validating the cypher **********
-
 def validate_cypher(state:OverAllState)->OverAllState:
     errors=[]
     mapping_errors=[]
@@ -372,6 +370,8 @@ def validate_cypher(state:OverAllState)->OverAllState:
         errors.extend(llm_output.errors)
     if llm_output.filters:
         for filter in llm_output.filters:
+            # print("Filter => ",filter)
+            # Do mapping only for string values
             if(not [
                 prop for prop in graph.structured_schema["node_props"][filter.node_label] if prop["property"]==filter.property_key
             ][0]["type"]=="STRING"):
@@ -482,7 +482,6 @@ def correct_cypher(state:OverAllState)->OverAllState:
 
 no_results = "I couldn't find any relevant information in the database"
 
-
 def execute_cypher(state:OverAllState)->OverAllState:
     records=graph.query(state.get("cypher_statement"))
     return{
@@ -533,7 +532,7 @@ def generate_final_answer(state:OverAllState)->OverAllState:
 
 
 
-
+### ********* Conditions. *********
 
 def guardrails_condition(state:OverAllState)->Literal["generate_cypher","generate_final_answer"]:
     if state.get("next_action")=="end":
@@ -584,7 +583,7 @@ langgraph=langgraph.compile()
 
 
 
-res=langgraph.invoke({"question": "Who are the Cast of Casino?"})
+res=langgraph.invoke({"question": "Who are the Cast of Toy Story?"})
 
 
 print(res)
