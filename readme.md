@@ -1,1 +1,22 @@
 ## Langchain Tutorial
+- **Topic Covered**
+    - **Semantic search on vector db:** How to use Vector db(Pinecone) in LangChain and using similarity search to query the DB. The main benefit of using vector db is LLM can query them much faster than traditional db hence improving response time.
+    - **Classification**: Classify a text into categories(angry,sad,neutral etc).
+    - **Extraction**: Extract only specific data that I want from a document(this doc can easily be X-GB).
+    - **Agents**: How to use Agents in LangChain. Build an agent that uses search tool to answer user query.
+    - **RAG**: build an application that uses given document(the document is stored in a vector db) to ans user query and remember the whole conversation.
+    - **QA with SQL:**
+        - Can ans user query based on information stored in DB.
+        - Has spell checking feature(so LLM can create proper query even if user have spelling mistake in query)
+        - Used Agents so that we don’t have to write the steps manually.
+    - **Document Summarization**
+        - How get summary from large documents optimally with LLM.
+    - **QA with Graph DB.**
+        - Basically same project of “QA with SQL” but we are using Graph DB to do it.
+        - This also introduces **“guardrails”** which is basically a mechanism that can prevent our LLM from doing prohibited steps(for example: deleting the a table). We can heavily narrow down LLM code execution scope , what kind of data it should reply to using this.
+
+- External Tools that can be integrated with LangChain
+    - [Support for JS](https://js.langchain.com/docs/integrations/tools/)
+    - [Support for Python](https://python.langchain.com/docs/integrations/tools/) - Python Support more tools than JS.
+- [Supported Chat Models.](https://python.langchain.com/docs/integrations/chat/)
+- [Pinecone](https://app.pinecone.io/) - Vector DB
